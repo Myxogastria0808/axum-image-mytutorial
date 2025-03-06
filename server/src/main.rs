@@ -30,7 +30,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let app: Router<()> = Router::new()
         .route("/", post(app_handler))
         .layer(cors)
-        .layer(DefaultBodyLimit::max(1024 * 1024 * 1000)); //1GB
+        .layer(DefaultBodyLimit::max(1024 * 1024 * 100)); //100MB
 
     // Server
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await?;
