@@ -1,4 +1,9 @@
-import { Controller, SubmitHandler, useForm } from "react-hook-form";
+import {
+  Controller,
+  SubmitHandler,
+  useFieldArray,
+  useForm,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FC } from "react";
 import { ErrorMessage } from "@hookform/error-message";
@@ -8,47 +13,8 @@ import "filepond/dist/filepond.min.css";
 import FilePondPluginImageExifOrientation from "filepond-plugin-image-exif-orientation";
 import FilePondPluginImagePreview from "filepond-plugin-image-preview";
 import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import imageCompression from "browser-image-compression";
 
 registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
-
-const endpoint: string = import.meta.env.VITE_ENDPOINT;
-const accessKeyId: string = import.meta.env.VITE_ACCESS_KEY_ID;
-const secretAccessKey: string = import.meta.env.VITE_SECRET_ACCESS_KEY;
-const bucket: string = import.meta.env.VITE_BUCKET;
-
-//* R2 *//
-//インスタンスの作成
-const s3: S3Client = new S3Client({
-  region: "auto",
-  endpoint: endpoint,
-  credentials: {
-    accessKeyId: accessKeyId,
-    secretAccessKey: secretAccessKey,
-    // @ts-ignore
-    signatureVersion: "v4",
-  },
-});
-
-//バケットにオブジェクトの追加
-//Bucketが、保存したいバケット名
-//Keyが、ファイル名になる
-//Bodyが、保存したいオブジェクト本体
-const addObject = async (filename: string, data: Buffer): Promise<void> => {
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: filename,
-      ContentType: "image/webp",
-      Body: data,
-    })
-  );
-};
-
-type ServerSampleData = {
-  name: string;
-};
 
 const App: FC = () => {
   const {
@@ -63,16 +29,24 @@ const App: FC = () => {
   const onSubmit: SubmitHandler<SampleSchemaType> = async (formData) => {
     console.table(formData);
 
+    const multipartFomrData = new FormData();
+    // string
+    multipartFomrData.append("name", formData.name);
+    const convertedArray: string = formData.array
+      .map((element) => element.element)
+      .join("^");
+    multipartFomrData.append("array", convertedArray);
+    // image
+    multipartFomrData.append(
+      "image",
+      new Blob([formData.image[0]], { type: formData.image[0].type }),
+      formData.image[0].name
+    );
+
     //* backend *//
-    const serverData: ServerSampleData = {
-      name: formData.name,
-    };
-    await fetch("http://localhost:5000/", {
+    await fetch("http://localhost:5000/multipart", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(serverData),
+      body: multipartFomrData,
     })
       .then((res) => {
         console.log(res);
@@ -80,19 +54,12 @@ const App: FC = () => {
       .catch((e) => {
         console.error(e);
       });
-
-    //* R2 *//
-    // convert to webp
-    const webp: File = await imageCompression(formData.image[0], {
-      initialQuality: 0.75,
-      fileType: "image/webp",
-    });
-    // convert to Buffer
-    const arrayBuffer: ArrayBuffer = await webp.arrayBuffer();
-    const buffer: Buffer<ArrayBuffer> = Buffer.from(arrayBuffer);
-    // upload to R2
-    await addObject("hello.webp", buffer);
   };
+
+  const arraySample = useFieldArray({
+    name: "array",
+    control,
+  });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -131,6 +98,38 @@ const App: FC = () => {
         errors={errors}
         name="image"
         message={errors.image?.message}
+      />
+      <br />
+      <label htmlFor="array">Array: </label>
+      {arraySample.fields.map((field, index: number) => (
+        <div key={field.id}>
+          <label htmlFor="array">{index}</label>
+          <select id="aray" {...register(`array.${index}.element` as const)}>
+            <option value="USB">USB</option>
+            <option value="HDMI">HDMI</option>
+            <option value="VGA">VGA</option>
+            <option value="DVI">DVI</option>
+          </select>
+          {index >= 0 && (
+            <input
+              type="submit"
+              value="✕"
+              onClick={() => arraySample.remove(index)}
+            />
+          )}
+        </div>
+      ))}
+      <br />
+      <ErrorMessage
+        errors={errors}
+        name="array"
+        message={errors.array?.message}
+      />
+      <br />
+      <input
+        type="button"
+        value="要素の追加"
+        onClick={() => arraySample.append({ element: "USB" })}
       />
       <br />
       <input type="submit" value="登録" />
