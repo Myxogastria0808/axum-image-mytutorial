@@ -41,13 +41,6 @@ async fn main() -> Result<(), anyhow::Error> {
 
 //Handler
 async fn app_handler(Json(sample_data): Json<SampleData>) -> Result<(), AppError> {
-    process().await?;
-    tracing::info!("{:#?}", sample_data);
-    Ok(())
-}
-
-//process
-async fn process() -> Result<(), anyhow::Error> {
-    tracing::info!("process");
+    tracing::info!("name: {}", sample_data.name);
     Ok(())
 }
