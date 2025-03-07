@@ -9,7 +9,7 @@ import FilePondPluginImageExifOrientation from "filepond-plugin-image-exif-orien
 import FilePondPluginImagePreview from "filepond-plugin-image-preview";
 import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import imageCompression, { Options } from "browser-image-compression";
+import imageCompression from "browser-image-compression";
 
 registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
 
