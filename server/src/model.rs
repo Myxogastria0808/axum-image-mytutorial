@@ -1,6 +1,7 @@
 use axum::body::Bytes;
 use utoipa::ToSchema;
-//SampleForm
+
+//utopiaのSchema用の構造体
 #[derive(Debug, ToSchema)]
 #[allow(dead_code)]
 pub struct SampleForm {
@@ -10,6 +11,7 @@ pub struct SampleForm {
     array: String,
 }
 
+//内部で処理するための構造体
 #[derive(Debug)]
 pub struct SampleRequest {
     pub name: String,

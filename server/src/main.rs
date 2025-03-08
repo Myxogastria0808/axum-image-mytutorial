@@ -13,6 +13,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 mod error;
 mod model;
+mod r2;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), anyhow::Error> {
@@ -68,7 +69,8 @@ pub async fn ping_handler() -> Result<impl IntoResponse, AppError> {
         (status = 500, description = "Internal Server Error", body = ResponseError),
     ),
 )]
-pub async fn app_handler(mut multipart: Multipart) -> Result<impl IntoResponse, AppError> {
+#[axum::debug_handler]
+pub async fn app_handler(mut multipart: Multipart) -> Result<impl IntoResponse + Send, AppError> {
     // multipartの中身をSampleRequestに突っこむ
     let mut sample_request = SampleRequest::default();
     // multipartを一つずつ取り出す
@@ -91,14 +93,17 @@ pub async fn app_handler(mut multipart: Multipart) -> Result<impl IntoResponse, 
                 sample_request.image = binary;
             }
             _ => {
-                println!("unknown param_name: {}", param_name);
+                return Err(anyhow::anyhow!("Invalid parameter name: {}", param_name).into());
             }
         }
     }
 
     // 結果を確認
     tracing::info!("Sample Request");
-    println!("{:#?}", sample_request);
+    println!("{:?}", sample_request);
+
+    // R2にアップロードする
+    r2::upload(&sample_request.image).await?;
 
     Ok((StatusCode::CREATED, ()).into_response())
 }
