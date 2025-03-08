@@ -17,11 +17,11 @@ mod r2;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), anyhow::Error> {
-    // tracing
-    let subscriber = tracing_subscriber::FmtSubscriber::builder()
-        .with_max_level(tracing::Level::DEBUG)
-        .finish();
-    tracing::subscriber::set_global_default(subscriber)?;
+    // // tracing
+    // let subscriber = tracing_subscriber::FmtSubscriber::builder()
+    //     .with_max_level(tracing::Level::DEBUG)
+    //     .finish();
+    // tracing::subscriber::set_global_default(subscriber)?;
 
     // CORS
     let cors: CorsLayer = CorsLayer::new()
@@ -40,7 +40,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Server
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await?;
-    tracing::debug!("listening on http://{}", listener.local_addr()?);
+    println!("listening on http://{}", listener.local_addr()?);
     axum::serve(listener, app).await?;
     Ok(())
 }
@@ -69,38 +69,53 @@ pub async fn ping_handler() -> Result<impl IntoResponse, AppError> {
         (status = 500, description = "Internal Server Error", body = ResponseError),
     ),
 )]
-#[axum::debug_handler]
 pub async fn app_handler(mut multipart: Multipart) -> Result<impl IntoResponse + Send, AppError> {
     // multipartの中身をSampleRequestに突っこむ
     let mut sample_request = SampleRequest::default();
     // multipartを一つずつ取り出す
     while let Some(field) = multipart.next_field().await? {
         // fieldの名前を取得してそれぞれ処理する
-        let param_name = field.name().unwrap().to_string();
-        match param_name.as_str() {
-            "name" => {
+        match field.name() {
+            Some("name") => {
                 let name = field.text().await?;
                 println!("name: {}", name);
                 sample_request.name = name;
             }
-            "array" => {
+            Some("array") => {
                 let raw_array = field.text().await?;
                 println!("array: {}", raw_array);
-                sample_request.array = raw_array.split("^").map(|s| s.to_string()).collect();
+                sample_request.array = raw_array
+                    .split("^")
+                    .skip(1)
+                    .map(|s| s.to_string())
+                    .collect();
+                println!("{:#?}", sample_request.array);
             }
-            "image" => {
+            Some("image") => {
                 let binary = field.bytes().await?;
                 sample_request.image = binary;
             }
-            _ => {
+            Some("option") => {
+                let option = field.text().await?;
+                println!("option: {}", option);
+                sample_request.option = if !option.is_empty() {
+                    Some(option)
+                } else {
+                    None
+                }
+            }
+            Some(param_name) => {
                 return Err(anyhow::anyhow!("Invalid parameter name: {}", param_name).into());
+            }
+            None => {
+                return Err(anyhow::anyhow!("Parameter not found").into());
             }
         }
     }
 
     // 結果を確認
-    tracing::info!("Sample Request");
-    println!("{:?}", sample_request);
+    // tracing::info!("Sample Request");
+    // println!("{:?}", sample_request);
 
     // R2にアップロードする
     r2::upload(&sample_request.image).await?;

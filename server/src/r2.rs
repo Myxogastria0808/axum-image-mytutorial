@@ -3,7 +3,7 @@ use cf_r2_sdk::builder::Builder;
 use dotenvy::dotenv;
 use image::DynamicImage;
 use std::env;
-use webp::{Encoder, WebPMemory};
+use webp::Encoder;
 
 pub async fn upload(binary: &[u8]) -> Result<(), AppError> {
     // load .env file
@@ -30,8 +30,8 @@ pub async fn upload(binary: &[u8]) -> Result<(), AppError> {
         .await?;
 
     // test
-    let test = object.download("hello.webp").await?;
-    println!("{:?}", test);
+    // let test = object.download("hello.webp").await?;
+    // println!("{:?}", test);
     Ok(())
 }
 
@@ -43,13 +43,13 @@ fn quality_range_protector(quality: f32) -> Result<f32, AppError> {
     }
 }
 
-fn convert_to_webp(binary: &[u8], quality: f32) -> Result<WebPMemory, AppError> {
+fn convert_to_webp(binary: &[u8], quality: f32) -> Result<Vec<u8>, AppError> {
     let img: DynamicImage = image::load_from_memory(binary).map_err(|e| -> AppError {
         anyhow::anyhow!(format!("Failed to load image from memory: {}", e)).into()
     })?;
-    let encoder: Encoder<'_> = Encoder::from_image(&img).map_err(|e| -> AppError {
+    let encoder = Encoder::from_image(&img).map_err(|e| -> AppError {
         anyhow::anyhow!(format!("Failed to create a webp encoder: {}", e)).into()
     })?;
-    let webp: WebPMemory = encoder.encode(quality_range_protector(quality)?);
+    let webp = encoder.encode(quality_range_protector(quality)?).to_vec();
     Ok(webp)
 }

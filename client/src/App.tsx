@@ -33,8 +33,8 @@ const App: FC = () => {
     // string
     multipartFomrData.append("name", formData.name);
     const convertedArray: string = formData.array
-      .map((element) => element.element)
-      .join("^");
+      .map((element) => "^" + element.element)
+      .join("");
     multipartFomrData.append("array", convertedArray);
     // image
     multipartFomrData.append(

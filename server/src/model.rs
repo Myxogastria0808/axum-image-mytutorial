@@ -9,6 +9,7 @@ pub struct SampleForm {
     #[schema(value_type = String, format = Binary)]
     image: Vec<u8>,
     array: String,
+    option: Option<String>,
 }
 
 //内部で処理するための構造体
@@ -17,6 +18,7 @@ pub struct SampleRequest {
     pub name: String,
     pub image: Bytes,
     pub array: Vec<String>,
+    pub option: Option<String>,
 }
 
 impl Default for SampleRequest {
@@ -25,6 +27,7 @@ impl Default for SampleRequest {
             name: "".to_string(),
             image: Bytes::new(),
             array: Vec::new(),
+            option: None,
         }
     }
 }
