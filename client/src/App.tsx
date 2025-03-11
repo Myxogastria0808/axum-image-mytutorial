@@ -24,6 +24,9 @@ const App: FC = () => {
     control,
   } = useForm<SampleSchemaType>({
     resolver: zodResolver(sampleSchema),
+    defaultValues: {
+      image: new DataTransfer().files,
+    },
   });
 
   const onSubmit: SubmitHandler<SampleSchemaType> = async (formData) => {
