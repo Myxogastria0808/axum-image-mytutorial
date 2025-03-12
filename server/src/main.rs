@@ -27,7 +27,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let cors: CorsLayer = CorsLayer::new()
         .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
         .expose_headers([header::CONTENT_DISPOSITION])
-        .allow_methods([Method::POST, Method::GET, Method::PATCH, Method::DELETE])
+        .allow_methods([Method::POST, Method::GET])
         .allow_origin(Any);
 
     // Router
@@ -128,7 +128,7 @@ pub async fn app_handler(mut multipart: Multipart) -> Result<impl IntoResponse +
     info(
         title = "axum-image-mytutorial-server",
         version = "0.0.1",
-        description = "Thsi is a axum-image-mytutorial-server API document.",
+        description = "This is a axum-image-mytutorial-server API document.",
         contact(
             name = "Myxogastria0808",
             email = "r.rstudio.c@gmail.com",
